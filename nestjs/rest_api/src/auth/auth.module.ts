@@ -8,11 +8,17 @@ import { User } from './entities/user.entity';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
+import { EventsModule } from 'src/events/events.module';
 
 const TypeOrmFeatures = TypeOrmModule.forFeature([User]);
 
 @Module({
-  imports: [TypeOrmFeatures, JwtModule.register({}), PassportModule],
+  imports: [
+    TypeOrmFeatures,
+    JwtModule.register({}),
+    PassportModule,
+    EventsModule,
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, RolesGuard],
   exports: [AuthService, RolesGuard],

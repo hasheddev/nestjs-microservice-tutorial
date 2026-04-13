@@ -13,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
 import { User } from './auth/entities/user.entity';
 import { FileUploadModule } from './file-upload/file-upload.module';
 import { File } from './file-upload/entities/file.entity';
+import { EventsModule } from './events/events.module';
 
 const TypeOrm = TypeOrmModule.forRootAsync({
   imports: [ConfigModule],
@@ -61,6 +62,7 @@ const Config = ConfigModule.forRoot({
     Cache,
     Config,
     FileUploadModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,31 @@
+1. whitelist: true
+This is your first line of defense against Mass Assignment attacks. It automatically strips away any properties in the request body that are not defined with a decorator (like @IsString()) in your DTO.
+
+Scenario: Your DTO only has title. A hacker sends { "title": "Hello", "isAdmin": true }.
+
+Result: NestJS removes isAdmin before it ever reaches your controller. Your code only sees { "title": "Hello" }.
+
+2. forbidNonWhitelisted: true
+This makes the whitelist option aggressive. Instead of just silently stripping out unknown properties, it stops the request entirely and throws a 400 Bad Request error.
+
+Scenario: User sends { "title": "Hello", "typoProperty": "oops" }.
+
+Result: The request fails. This is great for debugging frontend typos because it forces the client to send exactly what the API expects.
+
+3. transform: true
+By default, everything coming over the network (URL params, body fields) is a String. This option automatically converts the incoming object into an actual instance of your DTO class.
+
+Scenario: You have a URL parameter :id and your DTO says it’s a number.
+
+Without transform: id is the string "1".
+
+With transform: id is the actual number 1. It also allows you to use default values in your DTO classes.
+
+4. disableErrorMessages: true
+This is a security/privacy setting for production. Normally, if validation fails, NestJS sends back a detailed array of what went wrong (e.g., "email must be an email").
+
+Scenario: A user sends an invalid email.
+
+Result: Instead of a detailed explanation, the user just gets a generic 400 Bad Request.
+
+Why? Detailed errors can sometimes leak information about your internal data structures or logic to potential attackers.

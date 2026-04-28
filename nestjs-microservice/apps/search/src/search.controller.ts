@@ -1,12 +1,14 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
+import { MessagePattern } from '@nestjs/microservices';
+
 import { SearchService } from './search.service';
 
 @Controller()
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
-  @Get()
-  getHello(): string {
-    return this.searchService.getHello();
+  @MessagePattern('service:ping')
+  ping() {
+    return this.searchService.ping();
   }
 }

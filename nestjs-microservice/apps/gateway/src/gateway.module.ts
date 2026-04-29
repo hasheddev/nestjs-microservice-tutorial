@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
+import { ProductshttpController } from './products/products.controller';
 
 const rmqurl = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
 const cQueue = process.env.CATALOG_QUEUE ?? 'catalog_queue';
@@ -48,7 +49,7 @@ const ClientModuleConf = ClientsModule.register([
   },
 ]);
 
-const ConfigModueConf = ConfigModule.forRoot({
+const ConfigModuleConf = ConfigModule.forRoot({
   isGlobal: true,
 });
 
@@ -57,12 +58,12 @@ const MongooseModuleConf = MongooseModule.forRoot(process.env.MONGODB_URI!);
 @Module({
   imports: [
     ClientModuleConf,
-    ConfigModueConf,
+    ConfigModuleConf,
     MongooseModuleConf,
     UsersModule,
     AuthModule,
   ],
-  controllers: [GatewayController],
+  controllers: [GatewayController, ProductshttpController],
   providers: [GatewayService],
 })
 export class GatewayModule {}

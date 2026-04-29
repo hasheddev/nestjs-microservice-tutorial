@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { SearchModule } from './search.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
+import { applyToMicorserviceLayer } from '@app/rpc';
 
 async function bootstrap() {
   process.title = 'search';
@@ -24,6 +25,7 @@ async function bootstrap() {
     },
   );
 
+  applyToMicorserviceLayer(app);
   app.enableShutdownHooks();
   await app.listen();
   logger.log(

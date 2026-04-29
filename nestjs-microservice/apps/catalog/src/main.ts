@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import { CatalogModule } from './catalog.module';
+import { applyToMicorserviceLayer } from '@app/rpc';
 
 async function bootstrap() {
   process.title = 'catalog';
@@ -27,6 +28,7 @@ async function bootstrap() {
     },
   );
 
+  applyToMicorserviceLayer(app);
   app.enableShutdownHooks();
   await app.listen();
   logger.log(

@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import { MediaModule } from './media.module';
+import { applyToMicorserviceLayer } from '@app/rpc';
 
 async function bootstrap() {
   process.title = 'media';
@@ -25,6 +26,7 @@ async function bootstrap() {
     },
   );
 
+  applyToMicorserviceLayer(app);
   app.enableShutdownHooks();
   await app.listen();
   logger.log(

@@ -1,10 +1,21 @@
-import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { type UserContext } from '../auth/auth.type';
 import { mapAllRpcErrorToHttp } from '@app/rpc';
 import { firstValueFrom } from 'rxjs';
 import { Pubic } from '../auth/public.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import 'multer';
 
 type Input = {
   name: string;
@@ -13,6 +24,8 @@ type Input = {
   status?: string;
   imageUrl?: string;
 };
+
+type uploadResonse = { mediaId: string; url: string; uploaderUserId: string };
 
 type Product = Pick<Input, 'name' | 'description' | 'imageUrl' | 'price'> & {
   _id: string;
@@ -24,22 +37,63 @@ type Product = Pick<Input, 'name' | 'description' | 'imageUrl' | 'price'> & {
 export class ProductshttpController {
   constructor(
     @Inject('CATALOG_CLIENT') private readonly catalogClient: ClientProxy,
+    @Inject('MEDIA_CLIENT') private readonly mediaClient: ClientProxy,
   ) {}
 
+  @UseInterceptors(
+    FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
   @Post('new')
-  async createProduct(@CurrentUser() user: UserContext, @Body() body: Input) {
+  async createProduct(
+    @CurrentUser() user: UserContext,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: Input,
+  ) {
+    let imageUrl: string | undefined;
+    let mediaId: string | undefined;
+
+    if (file) {
+      const base64 = file.buffer.toString('base64');
+      try {
+        const uploadResullt = await firstValueFrom<uploadResonse>(
+          this.mediaClient.send('media:uploadImage', {
+            fileName: file.originalname,
+            mimeType: file.mimetype,
+            base64,
+            uploaderUserId: user.clerkUserId,
+          }),
+        );
+        imageUrl = uploadResullt.url;
+        mediaId = uploadResullt.mediaId;
+      } catch (error) {
+        mapAllRpcErrorToHttp(error);
+      }
+    }
     const payload = {
       name: body.name,
       description: body.description,
       price: Number(body.price),
       createdByClerkUserId: user.clerkUserId,
       status: body.status,
-      imageUrl: '',
+      imageUrl,
     };
     try {
       const product = await firstValueFrom(
         this.catalogClient.send<Product>('product:create', payload),
       );
+      if (mediaId) {
+        try {
+          await firstValueFrom(
+            this.mediaClient.send('media:attachImageToProduct', {
+              mediaId,
+              productId: String(product._id),
+            }),
+          );
+        } catch (error) {
+          mapAllRpcErrorToHttp(error);
+        }
+      }
+
       return product;
     } catch (error) {
       mapAllRpcErrorToHttp(error);

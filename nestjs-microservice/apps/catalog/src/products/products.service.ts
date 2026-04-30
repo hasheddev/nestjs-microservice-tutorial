@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductDocument } from './product.schema';
 import { isValidObjectId, Model } from 'mongoose';
@@ -16,6 +16,8 @@ type Input = {
 
 @Injectable()
 export class ProductService {
+  private logger = new Logger(ProductService.name);
+
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
@@ -67,12 +69,21 @@ export class ProductService {
     createdByClerkUserId: string;
     mediaExists: boolean;
   }) {
-    const result = await this.productModel.deleteMany({
-      _id: input.productId,
-      createdByClerkUserId: input.createdByClerkUserId,
-    });
+    const result = await this.productModel
+      .deleteMany({
+        _id: input.productId,
+        createdByClerkUserId: input.createdByClerkUserId,
+      })
+      .exec();
     if (!result.acknowledged) {
       rpcInternalServerError('failed to delete product');
+    }
+
+    if (result.deletedCount === 0) {
+      this.logger.warn(
+        `Product ${input.productId} not found for user ${input.createdByClerkUserId}. Skipping cleanup.`,
+      );
+      return;
     }
     return this.events.productDeleted(input);
   }

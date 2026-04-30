@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class UploadProductImageDto {
   @IsString({ message: 'file name must be a string' })
@@ -20,4 +20,25 @@ export class AttachProductDto {
 
   @IsString({ message: 'productId must be a string' })
   productId!: string;
+}
+
+export class FetchMediaDto {
+  @IsString({ message: 'productId must be a string' })
+  productId!: string;
+}
+
+export class ProductImageDeletedDto {
+  @IsNotEmpty()
+  @IsString({ message: 'productId must be a string' })
+  publicId!: string;
+}
+
+export class ProductDeletedDto {
+  @IsNotEmpty()
+  @IsString({ message: 'productId must be a string' })
+  productId!: string;
+
+  @IsNotEmpty()
+  @IsString({ message: 'productId must be a string' })
+  createdByClerkUserId!: string;
 }

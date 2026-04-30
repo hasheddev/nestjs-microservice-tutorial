@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  ForbiddenException,
   Get,
   Inject,
   Param,
@@ -13,7 +15,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { type UserContext } from '../auth/auth.type';
 import { mapAllRpcErrorToHttp } from '@app/rpc';
 import { firstValueFrom } from 'rxjs';
-import { Pubic } from '../auth/public.decorator';
+import { Public } from '../auth/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import 'multer';
 
@@ -23,6 +25,14 @@ type Input = {
   price: number;
   status?: string;
   imageUrl?: string;
+};
+
+type Media = {
+  mediaExists: boolean;
+  mediaId: string;
+  productId: string;
+  publicId: string;
+  userId: string;
 };
 
 type uploadResonse = { mediaId: string; url: string; uploaderUserId: string };
@@ -100,7 +110,7 @@ export class ProductshttpController {
     }
   }
 
-  @Pubic()
+  @Public()
   @Get()
   async getAllProducts() {
     try {
@@ -112,13 +122,50 @@ export class ProductshttpController {
       mapAllRpcErrorToHttp(error);
     }
   }
+
   @Get(':id')
   async getProductById(@Param('id') id: string) {
     try {
       const product = await firstValueFrom(
-        this.catalogClient.send<Product>('product:getById', { id }),
+        this.catalogClient.send<boolean>('product:getById', { id }),
       );
       return product;
+    } catch (error) {
+      mapAllRpcErrorToHttp(error);
+    }
+  }
+
+  @Delete(':id')
+  async deleteProduct(
+    @Param('id') id: string,
+    @CurrentUser() user: UserContext,
+  ) {
+    try {
+      const productMedia = await firstValueFrom(
+        this.mediaClient.send<Media>('product:image:fetch', { productId: id }),
+      );
+
+      if (productMedia.mediaExists) {
+        if (productMedia.userId !== user.clerkUserId) {
+          throw new ForbiddenException({
+            message: 'you can only delete product you upload',
+          });
+        }
+        await firstValueFrom(
+          this.mediaClient.send<boolean>('product:image:delete', {
+            publicId: productMedia.publicId,
+          }),
+        );
+      }
+
+      await firstValueFrom(
+        this.catalogClient.emit('product:delete', {
+          productId: id,
+          createdByClerkUserId: user.clerkUserId,
+          mediaExists: productMedia.mediaExists,
+        }),
+      );
+      return { message: `product ${id} deleteion scheduled successfully` };
     } catch (error) {
       mapAllRpcErrorToHttp(error);
     }

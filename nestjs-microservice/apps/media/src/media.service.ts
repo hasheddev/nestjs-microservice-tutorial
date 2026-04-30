@@ -3,7 +3,12 @@ import { initCloudinary } from './cloudinary/cloudinary.client';
 import { InjectModel } from '@nestjs/mongoose';
 import { Media, MediaDocument } from './media/media.schema';
 import { Model } from 'mongoose';
-import { rpcBadRequest, rpcNotFound, rpcUnauthorized } from '@app/rpc';
+import {
+  rpcBadRequest,
+  rpcInternalServerError,
+  rpcNotFound,
+  rpcUnauthorized,
+} from '@app/rpc';
 import { UploadApiResponse } from 'cloudinary';
 import { RpcException } from '@nestjs/microservices';
 
@@ -81,13 +86,52 @@ export class MediaService {
       )
       .exec();
     if (!uploadatedMediaDoc) {
-      rpcNotFound('medai not found');
+      rpcNotFound('media not found');
     }
     return {
       mediaId: String(uploadatedMediaDoc._id),
       productId: uploadatedMediaDoc.productId!,
       publicId: uploadatedMediaDoc.publicId,
       url: uploadatedMediaDoc.url,
+    };
+  }
+
+  async deleteFromCloudinary(input: { publicId: string }) {
+    const response = (await this.cloudinary.uploader.destroy(
+      input.publicId,
+    )) as { result: string };
+
+    if (response.result !== 'ok' && response.result !== 'not_found') {
+      rpcInternalServerError(`Cloudinary failed: ${response.result}`);
+    }
+    return true;
+  }
+
+  async deleteFromDb(input: {
+    productId: string;
+    createdByClerkUserId: string;
+  }) {
+    const result = await this.mediaModel.deleteMany({
+      productId: input.productId,
+      uploaderUserId: input.createdByClerkUserId,
+    });
+    if (!result.acknowledged)
+      rpcInternalServerError(
+        `failed to delete image for product ${input.productId}`,
+      );
+  }
+
+  async fetchImage(input: { productId: string }) {
+    const mediaDoc = await this.mediaModel.findOne({
+      productId: input.productId,
+    });
+    if (!mediaDoc) return { mediaExists: false };
+    return {
+      mediaExists: true,
+      mediaId: String(mediaDoc._id),
+      productId: mediaDoc.productId!,
+      publicId: mediaDoc.publicId,
+      userId: mediaDoc.uploaderUserId,
     };
   }
 

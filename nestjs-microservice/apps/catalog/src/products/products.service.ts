@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product, ProductDocument } from './product.schema';
 import { isValidObjectId, Model } from 'mongoose';
-import { rpcBadRequest, rpcNotFound } from '@app/rpc';
+import { rpcBadRequest, rpcInternalServerError, rpcNotFound } from '@app/rpc';
+import { ProductEventsPublisher } from '../events/product-event-publisher';
 
 type Input = {
   name: string;
@@ -18,6 +19,7 @@ export class ProductService {
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    private readonly events: ProductEventsPublisher,
   ) {}
 
   async createNewProduct(input: Input) {
@@ -48,7 +50,31 @@ export class ProductService {
       createdByClerkUserId: input.createdByClerkUserId,
       price: input.price,
     });
+    await this.events.productCreated({
+      productId: String(newProduct._id),
+      description: newProduct.description,
+      name: newProduct.name,
+      price: newProduct.price,
+      status: newProduct.status,
+      imageUrl: newProduct.imageUrl,
+      createdByClerkUserId: newProduct.createdByClerkUserId,
+    });
     return newProduct;
+  }
+
+  async deleteProduct(input: {
+    productId: string;
+    createdByClerkUserId: string;
+    mediaExists: boolean;
+  }) {
+    const result = await this.productModel.deleteMany({
+      _id: input.productId,
+      createdByClerkUserId: input.createdByClerkUserId,
+    });
+    if (!result.acknowledged) {
+      rpcInternalServerError('failed to delete product');
+    }
+    return this.events.productDeleted(input);
   }
 
   async listProducts() {

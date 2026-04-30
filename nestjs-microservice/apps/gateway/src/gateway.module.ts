@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductshttpController } from './products/products.controller';
+import { SearchhttpController } from './search/search.controller';
 
 const rmqurl = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
 const cQueue = process.env.CATALOG_QUEUE ?? 'catalog_queue';
@@ -63,7 +64,11 @@ const MongooseModuleConf = MongooseModule.forRoot(process.env.MONGODB_URI!);
     UsersModule,
     AuthModule,
   ],
-  controllers: [GatewayController, ProductshttpController],
+  controllers: [
+    GatewayController,
+    SearchhttpController,
+    ProductshttpController,
+  ],
   providers: [GatewayService],
 })
 export class GatewayModule {}

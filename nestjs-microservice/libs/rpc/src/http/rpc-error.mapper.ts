@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
@@ -14,6 +15,9 @@ interface RpcError {
 }
 
 export function mapAllRpcErrorToHttp(error: unknown): never {
+  if (error instanceof HttpException) {
+    throw error;
+  }
   const isObject = typeof error === 'object' && error !== null;
   const errorObj = isObject ? (error as Record<string, unknown>) : {};
 

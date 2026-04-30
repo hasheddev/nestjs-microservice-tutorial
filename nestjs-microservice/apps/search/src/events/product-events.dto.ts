@@ -1,43 +1,42 @@
 import {
-  IsBoolean,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   Min,
 } from 'class-validator';
-import { type ProductStatus } from './product.schema';
 
-export class CreateProductDto {
-  @IsNotEmpty({ message: 'Name is required' })
+export class ProductCreatedDto {
+  // Exec order: IsString -> IsNotEmpty
+  @IsNotEmpty()
+  @IsString({ message: 'productId must be a string' })
+  productId!: string;
+
+  @IsNotEmpty()
   @IsString({ message: 'name must be a string' })
   name!: string;
 
-  @IsNotEmpty({ message: 'description is required' })
+  @IsNotEmpty()
   @IsString({ message: 'description must be a string' })
   description!: string;
 
-  @Min(0, { message: 'Price must be a positive number' })
+  @IsIn(['Draft', 'Active'])
+  @IsString({ message: 'status must be a string' })
+  status!: 'Draft' | 'Active';
+
+  @Min(0)
   @IsNumber()
   price!: number;
 
   @IsOptional()
-  @IsString({ message: 'status must be a string' })
-  status?: ProductStatus;
-
-  @IsOptional()
+  @IsNotEmpty()
   @IsString({ message: 'imageUrl must be a string' })
   imageUrl?: string;
 
-  @IsNotEmpty({ message: 'userId is required' })
+  @IsNotEmpty()
   @IsString({ message: 'userId must be a string' })
   createdByClerkUserId!: string;
-}
-
-export class GetProductByIdDto {
-  @IsNotEmpty()
-  @IsString()
-  id!: string;
 }
 
 export class ProductDeletedDto {
@@ -47,7 +46,4 @@ export class ProductDeletedDto {
   @IsNotEmpty()
   @IsString({ message: 'userId must be a string' })
   createdByClerkUserId!: string;
-
-  @IsBoolean()
-  mediaExists!: boolean;
 }

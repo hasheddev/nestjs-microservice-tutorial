@@ -111,10 +111,12 @@ export class MediaService {
     productId: string;
     createdByClerkUserId: string;
   }) {
-    const result = await this.mediaModel.deleteMany({
-      productId: input.productId,
-      uploaderUserId: input.createdByClerkUserId,
-    });
+    const result = await this.mediaModel
+      .deleteMany({
+        productId: input.productId,
+        uploaderUserId: input.createdByClerkUserId,
+      })
+      .exec();
     if (!result.acknowledged)
       rpcInternalServerError(
         `failed to delete image for product ${input.productId}`,
@@ -122,9 +124,11 @@ export class MediaService {
   }
 
   async fetchImage(input: { productId: string }) {
-    const mediaDoc = await this.mediaModel.findOne({
-      productId: input.productId,
-    });
+    const mediaDoc = await this.mediaModel
+      .findOne({
+        productId: input.productId,
+      })
+      .exec();
     if (!mediaDoc) return { mediaExists: false };
     return {
       mediaExists: true,

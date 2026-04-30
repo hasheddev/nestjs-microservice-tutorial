@@ -32,10 +32,12 @@ export class SearchService {
     productId: string;
     createdByClerkUserId: string;
   }) {
-    const result = await this.searchModel.findOneAndDelete({
-      productId: input.productId,
-      createdByClerkUserId: input.createdByClerkUserId,
-    });
+    const result = await this.searchModel
+      .findOneAndDelete({
+        productId: input.productId,
+        createdByClerkUserId: input.createdByClerkUserId,
+      })
+      .exec();
     if (!result) {
       this.logger.warn(
         `Search document for ${input.productId} already deleted or not found`,
@@ -74,7 +76,8 @@ export class SearchService {
     return this.searchModel
       .find({ normalizedText: { $regex: regex } })
       .sort({ createdAt: -1 })
-      .limit(limit);
+      .limit(limit)
+      .exec();
   }
 
   async textSearch(input: { q: string; limit?: number }) {
@@ -84,7 +87,8 @@ export class SearchService {
     return this.searchModel
       .find({ $text: { $search: q } })
       .sort({ score: { $meta: 'textScore' } })
-      .limit(limit);
+      .limit(limit)
+      .exec();
   }
 
   ping() {
